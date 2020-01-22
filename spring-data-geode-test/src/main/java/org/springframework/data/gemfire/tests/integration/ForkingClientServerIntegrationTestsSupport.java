@@ -54,6 +54,7 @@ import org.springframework.data.gemfire.tests.process.ProcessWrapper;
 public abstract class ForkingClientServerIntegrationTestsSupport extends ClientServerIntegrationTestsSupport {
 
 	private static ProcessWrapper gemfireServer;
+	private static ProcessWrapper gemfireLocator;
 
 	public static void startGemFireServer(Class<?> gemfireServerConfigurationClass, String... arguments)
 			throws IOException {
@@ -69,9 +70,30 @@ public abstract class ForkingClientServerIntegrationTestsSupport extends ClientS
 		waitForServerToStart("localhost", availablePort);
 	}
 
+	public static void startGemFireLocator(Class<?> gemfireServerConfigurationClass, String... arguments)
+			throws IOException {
+
+		int availablePort = setAndGetPoolPortProperty(setAndGetLocatorPortProperty(findAvailablePort()));
+
+		List<String> argumentList = new ArrayList<>(Arrays.asList(nullSafeArray(arguments, String.class)));
+
+		argumentList.add(String.format("-D%s=%d", GEMFIRE_LOCATOR_PORT, availablePort));
+
+		setGemFireServerProcess(run(gemfireServerConfigurationClass, argumentList.toArray(new String[0])));
+
+		waitForServerToStart("localhost", availablePort);
+	}
+
 	protected static int setAndGetCacheServerPortProperty(int port) {
 
 		System.setProperty(GEMFIRE_CACHE_SERVER_PORT_PROPERTY, String.valueOf(port));
+
+		return port;
+	}
+
+	protected static int setAndGetLocatorPortProperty(int port) {
+
+		System.setProperty(GEMFIRE_LOCATOR_PORT, String.valueOf(port));
 
 		return port;
 	}
@@ -84,13 +106,17 @@ public abstract class ForkingClientServerIntegrationTestsSupport extends ClientS
 	}
 
 	@AfterClass
-	public static void stopGemFireServer() {
+	public static void stopGemFireCluster() {
+		getGemFireLocatorProcess().ifPresent(ForkingClientServerIntegrationTestsSupport::stop);
+		setGemFireLocatorProcess(null);
+
 		getGemFireServerProcess().ifPresent(ForkingClientServerIntegrationTestsSupport::stop);
 		setGemFireServerProcess(null);
 	}
 
 	@AfterClass
-	public static void clearCacheServerPortAndPoolPortProperties() {
+	public static void clearPortProperties() {
+		System.clearProperty(GEMFIRE_LOCATOR_PORT);
 		System.clearProperty(GEMFIRE_CACHE_SERVER_PORT_PROPERTY);
 		System.clearProperty(GEMFIRE_POOL_SERVERS_PROPERTY);
 	}
@@ -99,8 +125,16 @@ public abstract class ForkingClientServerIntegrationTestsSupport extends ClientS
 		gemfireServer = gemfireServerProcess;
 	}
 
+	protected static synchronized void setGemFireLocatorProcess(ProcessWrapper gemfireLocatorProcess) {
+		gemfireLocator = gemfireLocatorProcess;
+	}
+
 	protected static synchronized Optional<ProcessWrapper> getGemFireServerProcess() {
 		return Optional.ofNullable(gemfireServer);
+	}
+
+	protected static synchronized Optional<ProcessWrapper> getGemFireLocatorProcess() {
+		return Optional.ofNullable(gemfireLocator);
 	}
 
 	@EnablePdx

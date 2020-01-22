@@ -61,6 +61,7 @@ public abstract class ClientServerIntegrationTestsSupport extends IntegrationTes
 	public static final String GEMFIRE_CACHE_SERVER_PORT_PROPERTY = "spring.data.gemfire.cache.server.port";
 	public static final String GEMFIRE_LOCALHOST_PORT = "localhost[%d]";
 	public static final String GEMFIRE_POOL_SERVERS_PROPERTY = "spring.data.gemfire.pool.servers";
+	public static final String GEMFIRE_LOCATOR_PORT = "spring.data.gemfire.locator.port";
 
 	protected static final String DEBUG_ENDPOINT = "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005";
 	protected static final String DEBUGGING_ENABLED_PROPERTY = "spring.data.gemfire.test.debugging.enabled";
